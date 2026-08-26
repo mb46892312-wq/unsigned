@@ -1,8 +1,8 @@
 <!DOCTYPE html>
-<html lang="en">`
+<html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <title>Unsigned — Live Chat Room</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -14,74 +14,263 @@
 <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-database-compat.js"></script>
 
 <style>
-  :root{
-    --void:#0A0A12;
-    --depth:#14141F;
+  :root {
+    --void: #0A0A12;
+    --depth: #14141F;
+    --depth-2: #1B1B2A;
     --hairline: rgba(237,237,244,0.09);
     --hairline-strong: rgba(237,237,244,0.16);
-    --paper:#EDEDF4;
-    --mist:#9A9AB0;
-    --mist-dim:#5E5E74;
-    --violet:#8B5CF6;
-    --cyan:#22D3C7;
-    --coral:#FF6B6B;
-    --font-display:'Space Grotesk', sans-serif;
-    --font-body:'Manrope', sans-serif;
-    --font-mono:'JetBrains Mono', monospace;
+    --paper: #EDEDF4;
+    --mist: #9A9AB0;
+    --mist-dim: #5E5E74;
+    --violet: #8B5CF6;
+    --cyan: #22D3C7;
+    --coral: #FF6B6B;
+    --font-display: 'Space Grotesk', sans-serif;
+    --font-body: 'Manrope', sans-serif;
+    --font-mono: 'JetBrains Mono', monospace;
   }
-  *{ box-sizing:border-box; margin:0; padding:0; }
-  body{ background:var(--void); color:var(--paper); font-family:var(--font-body); height:100vh; display:flex; flex-direction:column; }
+  
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  
+  /* Use 100dvh for proper sizing on mobile browsers (ignores address bar) */
+  body { 
+    background: var(--void); 
+    color: var(--paper); 
+    font-family: var(--font-body); 
+    height: 100dvh; 
+    display: flex; 
+    flex-direction: column; 
+    overflow: hidden;
+  }
 
-  .chat-header{
-    padding:16px 24px; background:rgba(10,10,18,0.9); border-bottom:1px solid var(--hairline);
-    display:flex; align-items:center; justify-content:space-between;
+  /* ---------- WhatsApp-Style Header ---------- */
+  .chat-header {
+    padding: 12px 16px;
+    background: rgba(10,10,18,0.85);
+    backdrop-filter: blur(12px);
+    border-bottom: 1px solid var(--hairline);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-shrink: 0;
+    z-index: 10;
   }
-  .header-actions{ display:flex; align-items:center; gap:12px; }
-  .back-btn, .clear-btn{
-    color:var(--mist); text-decoration:none; font-size:13px; font-weight:600;
-    padding:6px 12px; border:1px solid var(--hairline-strong); border-radius:8px; background:var(--depth);
-    cursor:pointer; transition:all 0.15s ease;
+  .header-left {
+    display: flex;
+    align-items: center;
+    gap: 12px;
   }
-  .back-btn:hover{ color:var(--paper); border-color:var(--violet); }
-  .clear-btn:hover{ color:var(--coral); border-color:var(--coral); }
-  .room-title{ font-family:var(--font-display); font-size:18px; text-transform:uppercase; letter-spacing:0.05em; }
+  .back-btn {
+    color: var(--paper);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    text-decoration: none;
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    transition: background 0.2s ease;
+  }
+  .back-btn:hover { background: var(--depth-2); }
+  .room-info {
+    display: flex;
+    flex-direction: column;
+  }
+  .room-title { 
+    font-family: var(--font-display); 
+    font-size: 16px; 
+    font-weight: 700;
+    text-transform: capitalize;
+    line-height: 1.2;
+  }
+  .room-tag {
+    font-family: var(--font-mono);
+    font-size: 11px;
+    color: var(--cyan);
+  }
+  .clear-btn {
+    background: transparent;
+    border: none;
+    color: var(--mist);
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s ease;
+  }
+  .clear-btn:hover { color: var(--coral); background: rgba(255,107,107,0.1); }
 
-  .chat-messages{ flex:1; overflow-y:auto; padding:24px; display:flex; flex-direction:column; gap:14px; }
-  .message-card{
-    max-width:70%; background:var(--depth); border:1px solid var(--hairline);
-    border-radius:12px; padding:12px 16px; align-self:flex-start;
+  /* ---------- Chat Area & Bubbles ---------- */
+  .chat-messages {
+    flex: 1;
+    overflow-y: auto;
+    padding: 20px 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    background: radial-gradient(circle at center, var(--depth) 0%, var(--void) 100%);
   }
-  .message-card.self{ align-self:flex-end; background:rgba(139,92,246,0.15); border-color:rgba(139,92,246,0.4); }
-  .msg-meta{ display:flex; justify-content:space-between; gap:16px; font-family:var(--font-mono); font-size:11px; margin-bottom:6px; color:var(--violet); }
-  .message-card.self .msg-meta{ color:var(--cyan); }
-  .msg-time{ color:var(--mist-dim); font-size:10px; }
-  .msg-body{ font-size:14px; line-height:1.4; }
 
-  .chat-input-area{ padding:16px 24px; background:var(--depth); border-top:1px solid var(--hairline); display:flex; gap:12px; }
-  .chat-input-area input{
-    flex:1; background:var(--void); border:1px solid var(--hairline-strong); border-radius:10px;
-    padding:12px 16px; color:var(--paper); font-family:inherit; font-size:14px;
+  .message-wrapper {
+    display: flex;
+    flex-direction: column;
+    max-width: 82%;
   }
-  .chat-input-area input:focus{ outline:none; border-color:var(--violet); }
-  .send-btn{ background:var(--violet); color:#fff; border:none; border-radius:10px; padding:0 24px; font-weight:600; cursor:pointer; }
+  
+  .message-wrapper.received { align-self: flex-start; }
+  .message-wrapper.self { align-self: flex-end; }
+  .message-wrapper.system { align-self: center; max-width: 90%; }
+
+  .message-card {
+    padding: 10px 14px;
+    border-radius: 16px;
+    position: relative;
+    font-size: 14.5px;
+    line-height: 1.4;
+    word-wrap: break-word;
+  }
+
+  /* Received Bubble (Left) */
+  .message-wrapper.received .message-card {
+    background: var(--depth-2);
+    border-bottom-left-radius: 4px; /* The tail */
+    border: 1px solid var(--hairline);
+  }
+  .msg-sender {
+    font-family: var(--font-mono);
+    font-size: 10px;
+    color: var(--cyan);
+    margin-bottom: 4px;
+    display: block;
+  }
+
+  /* Sent Bubble (Right) */
+  .message-wrapper.self .message-card {
+    background: var(--violet);
+    color: #fff;
+    border-bottom-right-radius: 4px; /* The tail */
+    box-shadow: 0 4px 12px rgba(139,92,246,0.2);
+  }
+
+  /* System Message (Center Pill) */
+  .message-wrapper.system .message-card {
+    background: var(--depth);
+    border: 1px solid var(--hairline-strong);
+    color: var(--mist);
+    font-size: 12px;
+    text-align: center;
+    border-radius: 20px;
+    padding: 6px 16px;
+  }
+
+  /* Timestamps */
+  .msg-time {
+    font-size: 9px;
+    color: var(--mist-dim);
+    align-self: flex-end;
+    margin-top: 4px;
+    display: flex;
+    justify-content: flex-end;
+  }
+  .message-wrapper.self .msg-time { color: rgba(255,255,255,0.7); }
+  .message-wrapper.received .msg-time { color: var(--mist); }
+
+  /* ---------- Input Area ---------- */
+  .chat-input-area {
+    padding: 12px 16px 20px 16px; /* Extra bottom padding for iPhone home bar */
+    background: var(--void);
+    border-top: 1px solid var(--hairline);
+    display: flex;
+    align-items: flex-end;
+    gap: 10px;
+    flex-shrink: 0;
+  }
+  .input-wrapper {
+    flex: 1;
+    background: var(--depth);
+    border: 1px solid var(--hairline-strong);
+    border-radius: 24px;
+    display: flex;
+    align-items: center;
+    padding: 4px 4px 4px 16px;
+    transition: border-color 0.2s ease;
+  }
+  .input-wrapper:focus-within {
+    border-color: var(--violet);
+    background: var(--depth-2);
+  }
+  .input-wrapper input {
+    flex: 1;
+    background: transparent;
+    border: none;
+    color: var(--paper);
+    font-family: inherit;
+    font-size: 15px;
+    padding: 10px 0;
+  }
+  .input-wrapper input:focus { outline: none; }
+  .input-wrapper input::placeholder { color: var(--mist-dim); }
+  
+  .send-btn {
+    background: var(--violet);
+    color: #fff;
+    border: none;
+    width: 42px;
+    height: 42px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    flex-shrink: 0;
+    transition: transform 0.15s ease, background 0.15s ease;
+  }
+  .send-btn:active { transform: scale(0.92); }
+  .send-btn:hover { background: #7c4df2; }
+  .send-btn svg { width: 18px; height: 18px; transform: translateX(-1px) translateY(1px); }
+
+  /* Mobile tweaks */
+  @media (max-width: 400px) {
+    .chat-header { padding: 10px 12px; }
+    .chat-messages { padding: 16px 12px; }
+    .message-wrapper { max-width: 88%; }
+  }
 </style>
 </head>
 <body>
 
+  <!-- Header -->
   <header class="chat-header">
-    <div class="header-actions">
-      <a href="unsigned-dashboard.html" class="back-btn">← Dashboard</a>
-      <button type="button" class="clear-btn" id="clearBtn">Clear Room</button>
+    <div class="header-left">
+      <a href="unsigned-dashboard.html" class="back-btn" aria-label="Go back">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" width="20" height="20"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg>
+      </a>
+      <div class="room-info">
+        <span class="room-title" id="roomTitleDisplay">Room Name</span>
+        <span class="room-tag" id="roomTag">#channel</span>
+      </div>
     </div>
-    <h1 class="room-title" id="roomTitleDisplay">Room</h1>
-    <span style="font-family:var(--font-mono); font-size:12px; color:var(--cyan);" id="roomTag">#channel</span>
+    
+    <button type="button" class="clear-btn" id="clearBtn" title="Clear Chat">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="18" height="18"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
+    </button>
   </header>
 
+  <!-- Chat Messages -->
   <main class="chat-messages" id="chatContainer"></main>
 
+  <!-- Input Area -->
   <form class="chat-input-area" id="chatForm">
-    <input type="text" id="messageInput" placeholder="Send a live unsigned drop..." required autocomplete="off">
-    <button type="submit" class="send-btn">Send</button>
+    <div class="input-wrapper">
+      <input type="text" id="messageInput" placeholder="Message..." required autocomplete="off">
+    </div>
+    <button type="submit" class="send-btn" aria-label="Send">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"></line><polygon points="22 2 15 22 11 13 2 9 22 2"></polygon></svg>
+    </button>
   </form>
 
 <script>
@@ -106,6 +295,7 @@
   // Reference to this specific room in Firebase Realtime Database
   const roomRef = db.ref('rooms/' + currentRoom);
 
+  // Set header text nicely
   document.getElementById('roomTitleDisplay').textContent = currentRoom.replace(/-/g, ' ');
   document.getElementById('roomTag').textContent = `#${currentRoom}`;
 
@@ -120,21 +310,41 @@
   }
 
   function renderMessage(msg) {
-    const isSelf = msg.sender === currentUser;
     const div = document.createElement('div');
-    div.className = `message-card ${isSelf ? 'self' : ''}`;
-    div.innerHTML = `
-      <div class="msg-meta">
-        <span>${isSelf ? 'YOU (' + msg.sender + ')' : msg.sender}</span>
-        <span class="msg-time">${msg.time || 'Just now'}</span>
-      </div>
-      <div class="msg-body">${msg.text}</div>
-    `;
+    
+    // Check message type (System, Self, or Received)
+    if (msg.sender === 'SYSTEM') {
+      div.className = 'message-wrapper system';
+      div.innerHTML = `
+        <div class="message-card">
+          ${msg.text}
+        </div>
+      `;
+    } else if (msg.sender === currentUser) {
+      div.className = 'message-wrapper self';
+      div.innerHTML = `
+        <div class="message-card">
+          <div class="msg-body">${msg.text}</div>
+          <div class="msg-time">${msg.time || 'Just now'}</div>
+        </div>
+      `;
+    } else {
+      div.className = 'message-wrapper received';
+      div.innerHTML = `
+        <div class="message-card">
+          <span class="msg-sender">${msg.sender}</span>
+          <div class="msg-body">${msg.text}</div>
+          <div class="msg-time">${msg.time || 'Just now'}</div>
+        </div>
+      `;
+    }
+
     chatContainer.appendChild(div);
-    chatContainer.scrollTop = chatContainer.scrollHeight;
+    // Smooth scroll to bottom
+    chatContainer.scrollTo({ top: chatContainer.scrollHeight, behavior: 'smooth' });
   }
 
-  // 2. Listen for live messages from Firebase Realtime Database
+  // 2. Listen for live messages
   roomRef.child('messages').on('value', (snapshot) => {
     chatContainer.innerHTML = '';
     const data = snapshot.val();
@@ -144,6 +354,7 @@
         renderMessage(msg);
       });
     } else {
+      // Empty room intro message
       renderMessage({ 
         sender: 'SYSTEM', 
         text: `Welcome to the live beginning of #${currentRoom}. Drop a message below!`, 
@@ -152,7 +363,7 @@
     }
   });
 
-  // 3. Send message directly to Firebase
+  // 3. Send message
   chatForm.addEventListener('submit', (e) => {
     e.preventDefault();
     const text = messageInput.value.trim();
@@ -165,6 +376,11 @@
     });
 
     messageInput.value = '';
+    
+    // Force mobile keyboards to stay open but scroll to bottom instantly
+    setTimeout(() => {
+        chatContainer.scrollTop = chatContainer.scrollHeight;
+    }, 50);
   });
 
   // 4. Clear room data from database
