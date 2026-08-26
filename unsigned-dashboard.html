@@ -146,7 +146,6 @@
     font-size:13.5px;
     color:var(--mist);
   }
-  .hero-row p b{ color:var(--cyan); font-weight:600; }
 
   .search-wrap{
     position:relative;
@@ -234,16 +233,6 @@
   }
   .group-icon svg{ width:19px; height:19px; }
 
-  .unread-badge{
-    min-width:20px; height:20px; padding:0 6px;
-    border-radius:999px;
-    background:var(--coral);
-    color:#1a0a0a;
-    font-size:11px; font-weight:700;
-    display:flex; align-items:center; justify-content:center;
-    font-family:var(--font-mono);
-  }
-
   .group-card h3{
     font-family:var(--font-display);
     font-size:16.5px;
@@ -272,38 +261,9 @@
     background:var(--cyan);
     box-shadow:0 0 6px var(--cyan);
   }
-  .group-meta .last{
-    font-size:11px;
-    color:var(--mist-dim);
-    font-family:var(--font-mono);
-  }
 
-  /* ---------- sidebar / activity ---------- */
-  .sidebar-card{
-    background:var(--depth);
-    border:1px solid var(--hairline);
-    border-radius:var(--radius-md);
-    padding:18px;
-  }
-  .activity-item{
-    display:flex; gap:11px;
-    padding:11px 0;
-    border-bottom:1px solid var(--hairline);
-  }
-  .activity-item:last-child{ border-bottom:none; padding-bottom:0; }
-  .activity-item:first-child{ padding-top:0; }
-  .activity-dot{
-    margin-top:5px;
-    width:7px; height:7px; border-radius:50%;
-    background: var(--dot-color, var(--violet));
-    flex-shrink:0;
-  }
-  .activity-text{ font-size:12.8px; line-height:1.5; color:var(--paper); }
-  .activity-text b{ color:var(--cyan); font-weight:600; }
-  .activity-time{ font-size:11px; color:var(--mist-dim); margin-top:3px; font-family:var(--font-mono); }
-
+  /* ---------- sidebar ---------- */
   .guideline-card{
-    margin-top:20px;
     background: linear-gradient(160deg, rgba(139,92,246,0.1), rgba(34,211,199,0.06));
     border:1px solid rgba(139,92,246,0.22);
     border-radius:var(--radius-md);
@@ -366,7 +326,7 @@
     <div class="hero-row">
       <div>
         <h1>Everything below is unlogged and untraceable.</h1>
-        <p>Six spaces. Zero names attached. <b>412 students unsigned right now.</b></p>
+        <p>Six spaces. Zero names attached.</p>
       </div>
       <div class="search-wrap">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
@@ -384,14 +344,6 @@
       </section>
 
       <aside>
-        <div class="section-label">
-          <h2>Recent drops</h2>
-          <span>live</span>
-        </div>
-        <div class="sidebar-card">
-          <div id="activityList"></div>
-        </div>
-
         <div class="guideline-card">
           <h4>
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2 4 6v6c0 5 3.4 8.4 8 10 4.6-1.6 8-5 8-10V6l-8-4Z"/></svg>
@@ -445,7 +397,7 @@
     </svg>`;
   }
 
-  // simulated "this device" identity — in production, read from device storage
+  // simulated identity
   const mySeed = 'device-session-8842';
   document.getElementById('chipTag').textContent = makeIdentity(mySeed);
   document.getElementById('chipGlyph').innerHTML = glyphSVG(mySeed, 26);
@@ -454,39 +406,33 @@
   // ---------- channel data ----------
   const channels = [
     {
-      id:'confessions', accent:'#8B5CF6', unread:12,
+      id:'confessions', accent:'#8B5CF6',
       name:'Campus Confessions', desc:'Say the thing you can’t say out loud.',
-      live:214, last:'4m',
       icon:'<path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>'
     },
     {
-      id:'faculty-feedback', accent:'#22D3C7', unread:3,
+      id:'faculty-feedback', accent:'#22D3C7',
       name:'Course & Faculty Feedback', desc:'Honest, anonymous notes on classes and teaching.',
-      live:96, last:'11m',
       icon:'<path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/>'
     },
     {
-      id:'mental-health', accent:'#F5B942', unread:0,
+      id:'mental-health', accent:'#F5B942',
       name:'Mental Health Lounge', desc:'A quiet corner. No judgment, no names.',
-      live:58, last:'32m',
       icon:'<path d="M20.8 4.6a5.5 5.5 0 0 0-7.8 0L12 5.6l-1-1a5.5 5.5 0 1 0-7.8 7.8l1 1L12 21l7.8-7.6 1-1a5.5 5.5 0 0 0 0-7.8z"/>'
     },
     {
-      id:'safety', accent:'#FF6B6B', unread:1,
+      id:'safety', accent:'#FF6B6B',
       name:'Campus Safety Reports', desc:'Flag what’s broken, unsafe, or wrong — anonymously.',
-      live:41, last:'1h',
       icon:'<path d="M12 2 4 6v6c0 5 3.4 8.4 8 10 4.6-1.6 8-5 8-10V6l-8-4Z"/>'
     },
     {
-      id:'free-talk', accent:'#6C8CFF', unread:27,
+      id:'free-talk', accent:'#6C8CFF',
       name:'Free Talk', desc:'Whatever’s on your mind, unfiltered.',
-      live:167, last:'1m',
       icon:'<circle cx="12" cy="12" r="10"/><path d="M8 14s1.5 2 4 2 4-2 4-2"/><line x1="9" y1="9" x2="9.01" y2="9"/><line x1="15" y1="9" x2="15.01" y2="9"/>'
     },
     {
-      id:'academic-help', accent:'#22D3C7', unread:5,
+      id:'academic-help', accent:'#22D3C7',
       name:'Academic Help', desc:'Stuck on a problem set? Ask without the ego hit.',
-      live:73, last:'18m',
       icon:'<path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"/>'
     },
   ];
@@ -496,34 +442,13 @@
     <a class="group-card" href="unsigned-chat.html?room=${c.id}" style="--card-accent:${c.accent}">
       <div class="group-card-top">
         <div class="group-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round">${c.icon}</svg></div>
-        ${c.unread > 0 ? `<span class="unread-badge">${c.unread}</span>` : ''}
       </div>
       <h3>${c.name}</h3>
       <p>${c.desc}</p>
       <div class="group-meta">
-        <span class="live"><i></i>${c.live} unsigned online</span>
-        <span class="last">${c.last} ago</span>
+        <span class="live"><i></i>Active channel</span>
       </div>
     </a>
-  `).join('');
-
-  // ---------- activity feed ----------
-  const activity = [
-    { text:'New message dropped in <b>Campus Confessions</b>', time:'just now', color:'#8B5CF6' },
-    { text:'12 new replies in <b>Course & Faculty Feedback</b>', time:'6m ago', color:'#22D3C7' },
-    { text:'A report was reviewed in <b>Free Talk</b> — post removed', time:'22m ago', color:'#FF6B6B' },
-    { text:'New thread opened in <b>Campus Safety Reports</b>', time:'41m ago', color:'#F5B942' },
-    { text:'<b>Academic Help</b> hit 70+ people online', time:'1h ago', color:'#22D3C7' },
-    { text:'New message dropped in <b>Mental Health Lounge</b>', time:'2h ago', color:'#8B5CF6' },
-  ];
-  document.getElementById('activityList').innerHTML = activity.map(a => `
-    <div class="activity-item">
-      <span class="activity-dot" style="--dot-color:${a.color}"></span>
-      <div>
-        <div class="activity-text">${a.text}</div>
-        <div class="activity-time">${a.time}</div>
-      </div>
-    </div>
   `).join('');
 
   document.getElementById('newDropBtn').addEventListener('click', () => {
